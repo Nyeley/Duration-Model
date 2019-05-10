@@ -2,12 +2,12 @@ Package: durationModel
 Type: Package
 Title: Duration Gap Analysis
 Version: 0.1.0
-Author: Tetteng Gaduel <tetteng.gaduel@usi.ch> 
+Author: Tetteng Gaduel <tettet@usi.ch> 
     Phoebe Staenz <phoebe.staenz@usi.ch>
-Maintainer: Tetteng Gaduel <tetteng.gaduel@usi.ch> 
+Maintainer: Tetteng Gaduel <tettet@usi.ch> 
     Phoebe Staenz <phoebe.staenz@usi.ch>
-Description: A tool to measure interest rate exposure and 
-    observe the effect of change in interest rate on net worth
+Description: A tool to measure exposure and 
+    monitor the effect of rate changes on net worth from the interest bearing assets and liabilities
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
