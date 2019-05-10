@@ -1,0 +1,241 @@
+---
+title: "Duration Gap Analysis"
+author: "Gaduel Tetteng, Staenz Phoebe"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Duration Gap Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Duration Model Introduction
+
+This vignette explains the formulae applied in the functions from the duration package and a reveals the analysis power of the results. The package is created for economists, who need to measure and manage interest rate risk exposures of financial institutions. There are two popular approaches to measure interest rate risk: repricing model and the duration model. The formulae used in the package are the formulae applied in the duration model. Duration is used to evaluate the financial institutions overall ineterst rate exposure, in other words the duration gap. The duration gap analysis aids in comprehending the impact on the FI's newt worth and if the FI will become insolvent, when the i.r. changes.
+
+The formulae were taken from the book A. Saunders and M. Cornett, Financial Institution Management, 8th International Edition, McGraw Hill. 
+
+## Getting Started 
+
+Prior to commencing with the analysis of the financial statements, an excel file with the necessary data is required. The excel file should contain from the consolidated balance sheet: all financial assets and liabilities. Additionally, the excel file should contain duration and yield of both assets and liabilities. Save the excel file as .csv and import the file to R.
+
+To recapitulate, the excel file will contain four columns:
+
+1. Asset or liability description
+1. Asset or liability monetary value 
+1. Duration
+1. Yield
+
+The package was intently written to avoid time consuming calculations in excel and overly crowded excel sheets. The functions are created, such that the user is simply required to provide a file with three numerical columns: asset/liability value, duration in years, and the yield.These will be the only inputs required for any of the functions in the package. 
+
+In order to explain the functions and their results, the remainder of the vignette includes examples. The examples contain data prepared from the 2018 annual report from Deutsche Bank AG. 
+
+Firstly, load package's installed data into your session.
+
+````{r echo = FALSE, results= 'asis'}
+library(durationModel)
+data(Assets)
+data(Liabilities)
+```
+
+Below is a snapshot of the data prepared from Deutsche Bank AG, 2018 AR.
+
+```{r echo = FALSE, results= 'asis'}
+library(knitr)
+kable(Assets[1:3,1:4], caption = "Assets")
+```
+```{r echo = FALSE, results= 'asis'}
+library(knitr)
+kable(Liabilities[1:3,1:4], caption = "Liabilities")
+```
+
+For the analysis to be efficient and seemless, save the selected columns as vectors. Elect short names to assign to your vectors.
+
+```{r, results= 'asis'}
+e <- Assets$Asset
+f <- Assets$Duration
+g <- Assets$Yield
+a <- Liabilities$Liability
+b <- Liabilities$Duration
+c <- Liabilities$Yield
+```
+
+## Duration
+
+The first part of the analysis is determining the duration of the assets and the liabilities. The "durationAssets" and "durationLiabilities" function implement the formulae depicted below. The formulae are summations of the proportion and duration of assets / liabilities in the asset / liability portfolio at market values. The result is an average weighted duration of assets or liabilities.
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/duration aa.png)
+
+Before executing the summation the function calculates the propotions, the weights, of each element in the asset vector. The proportions are calculated by dividing the individual asset value by the total asset value. Each element from the resulting proportion vector is multipled by the duration element in the same position. The result is a single number, namely the weighted duration of assets. 
+
+The length(x) determines the number of elements in the asset vector. When calculationg the proportion vector, the function is dividing the first element in the asset vector by the sum of all the elemements in the asset vector. The function executes the porportion calculation for all elements in the asset vector and the resulting asset vector will have 15 elements as well. In the final step the function multiples each element in the porportion vector by each element in the asset duration vector (15 multiplication) and sums the multiplications, returning the weighted duration of assets.
+
+Executing the function with our predetermined vectors of asset value (e) and duration (f), the weighted duration of assets is 5.2 years.
+
+```{r echo=TRUE, results= 'asis'}
+durationAssets <- function(x, y){
+  u <- length(x)
+  p <- x[1:u]/sum(x[1:u])
+  return(sum(p[1:u]*y[1:u]))
+}
+```
+```{r echo=TRUE, results= 'asis'}
+durationAssets(e,f)
+```
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/duration a.png)
+
+The "durationLiabilities" function is identical to the preceeding "durationAssets" function. Instead of using the asset values and duration, the liability value and durations are inserted as input parameters. The execution of the function is equivalent to the "durationAssets" function, where the result is a single number, namely the weighted duration of liabilities. For the explanation refer to the above paragraph.
+
+Executing the function with our predetermined vectors of liability value (a) and duration (b), the weighted duration of liabilities is 1.9 years.
+
+```{r echo=TRUE, results= 'asis'}
+durationLiabilities <- function(x, y){
+  u <- length(x)
+  p <- x[1:u]/sum(x[1:u])
+  return (sum(p[1:u]*y[1:u]))
+}
+```
+```{r echo=TRUE, results= 'asis'}
+durationLiabilities(a, b)
+```
+
+## Change in Assets and Liabilities
+
+In the previous section we looked at the duration and there was no mention of the interest rate. It was not relevant for the calculation of the duration of assets and liabilities.  Starting in this section the interest rate gains relevancy. This section deals with the interest rate exposure of the assets and liabilities. We assume a potential shock in the level of interest rate.
+
+The duration approximation from the previous section is used to determine the affect the change in interest rate has on the individual assets and ultimately on the total asset position of the financial institute. The functions are identical for the assets and liabilities. Assets will use the asset vector, asset duration vector, asset yield vector, and the specific predicted change in interest rate specific to assets.
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/change assets.png)
+
+The "changeAssets" function applies the formula depicted above. The number of elements used in the computation is determined by the length(x), the number of values in the asset vector. First, the shock in the level of the interest rate is determined by dividing the potential change in i.r. by one plus the existing yield. The shock is computed element by element, which implies that each asset in the asset vector has a different interest rate shock. The function procceeds to compute the affect the interest rate change has on the individual asset's value, then aggregates the individual changes to the total change in asset value. 
+
+In the examples following, the predicted interest rate change is 0.0015 for assets and 0.0025 for liabilities.
+
+Executing the function with our predetermined vectors of asset value (e), duration (f), yield (g), and 0.0015 the overall change in assets is EURm -9843.87.
+
+```{r echo=TRUE, results= 'asis'}
+changeAssets <- function(x, y, z, r){
+  u <- length(x)
+  r_shock <- r/(1 + z[1:u])
+  individualDelta_A <- -y[1:u] * x[1:u] * r_shock
+  return(sum(individualDelta_A))
+}
+```
+```{r echo=TRUE, results= 'asis'}
+changeAssets(e, f, g, 0.0015)
+```
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/change liabilities.png)
+
+The execution for the "changeLiabilities" function is identical to the execution of the "chanegAssets" function. With the "changeLiabilities" function the input parameters are the vectors containing the liability values.
+
+Executing the function with our predetermined vectors of liability value (a), duration (b), yield (c), and 0.0025, the overall change in liabilities is EURm -5918.691.
+
+```{r echo=TRUE, results= 'asis'}
+changeLiabilities <- function(x, y, z, r){
+  u <- length(x)
+  r_shock <- r/(1 + z[1:u])
+  individualDelta_L <- -y[1:u] * x[1:u] * r_shock
+  print(sum(individualDelta_L))
+}
+```
+```{r echo=TRUE, results= 'asis'}
+changeLiabilities(a,b,c, 0.0025)
+```
+
+## Simple Change in Equity
+
+When analising the effect of interest rate, equity is also to be considered. Considering the change in equity, will help determine, whether the financial institution will become insolvent. Due to different changes in interest rate for assets and liabilities (spread in i.r. > 0), the simplest way of calculating the effect of the predicted interest rate changes is to subtract the aggregate change in assets by the aggregate change in liabilities.
+
+The formulae depicted below have been used seperately in the previous sections, computing either duration of the assets and liabilities or the change in assets and liabilities, when experiencing a shock in the level of interest rate. In this section the individual formulae come together to compute the effect the change in interest rate for assets and liabilities has on the equity position of the financial institute.
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/simple E.png)
+
+As with the formulae from above, the function below includes elements of functions from the previous' sections functions. The "aggregateDeltaE" function constructed, such that the input parameters are split into assets and liabilities. The inputs assosciated with the assets (asset value, asset duration, asset yield, r1) come first and are followed by the inputs assosciated with the liabilities (liability value, liability duration, liability yield, r2). Similarily, the function is constructed in the same way: asset computation first and liabilities computation second.
+
+Familiar are the "r_shock" executions of the potential i.r. changes for liabilities and assets, the "individualDeltaA" and "individualDeltaL" calculation and its summation. The newly added execution within the function is in the last line, where the sum of individual changes in liabilities is subtracted from the sum of individual changes in assets. 
+
+By placing both summations of the "individualDelta_A" and "individualDeltaL" within the same function, we eliminate the need to save results from the previous functions. The user has the liberty to decide, whether the previous steps serve any value to their analysis or whether they wish to only observe the change in equity. Again, kthe only inputs required by the user are the columns from the prepared excel file and the desired change in interest rates.
+
+Note that "r_shock" for the asset part of the function uses "r1" and therefore the liabilities part uses the "r2". Executing the function with our predetermined vectors of asset value (e), asset duration (f), asset yield (g), change in i.r. for assets (0.0015), liability value (a), liability duration (b), liability yield (c), and chaange in i.r. for liabilities (0.0025), the overall change in equity is EURm -3925.2.
+
+```{r echo=TRUE, results= 'asis'}
+aggregateDeltaE <- function(x, y, z, r1, h, i, j, r2){
+  u <- length(x)
+  r_shock_1 <- r1/(1 + z[1:u])
+  individualDelta_A <- -y[1:u] * x[1:u] * r_shock_1
+  d <- sum(individualDelta_A)
+  n <- length(h)
+  r_shock_2 <- r2/(1 + j[1:n])
+  individualDelta_L <- -i[1:n] * h[1:n] * r_shock_2
+  e <- sum(individualDelta_L)
+  return(d - e) 
+}
+```
+```{r echo=TRUE, results= 'asis'}
+aggregateDeltaE(e, f, g, 0.0015, a, b, c, 0.0025)
+```
+
+## Leverage Adjusted Duration Gap
+
+The leverage adjusted duration gap uses the ratio between the total assets and the total liabilities to scale the duration of liabilities and to determine the gap between the scaled duration of liabilities and duration of assets. The larger the gap, the greater the duration mismatch.
+
+In the formula depicted below are the duration of assets and liabilities, as well as the factor "k". "k" represents the market measure of risk, which in turn is the ratio between asets and liabilities.
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/ladg.png)
+
+The function below is constructed in such a manner that elements of functions from the previous sections are being reused and the user will not need to save previously obtained results. Recognize the proportion vectors and its summation from the duration section. The additional computation this function under takes are in the last two lines. "k" is the ratio between asets and liabilities. The penultimate line executes the summation of liability value and divides it by the summation of the asset values. The last line is the insertion of the levergage adjusted duration gap formula from the image above. In the lines leading up to k, the function computes the duration of assets and liabilities. The command in the last line tells the function to combine our duration results with the market measure risk and return the LADG.
+
+Executing the function with our predetermined vectors of asset value (e), asset duration (f), liability value (a), and liability duration (b), the leverage adjusted duration gap is 3.36 years. 
+
+```{r echo=TRUE, results= 'asis'}
+ladg <- function(x, y, z, w){
+  u <- length(x)
+  p <- x[1:u]/sum(x[1:u])
+  Da <- (sum(p[1:u]*y[1:u]))
+  n <- length(z)
+  o <- z[1:n]/sum(z[1:n])
+  Dl <- sum(o[1:n]*w[1:n])
+  k <- sum(z)/sum(x)
+  return(Da - (Dl*k))
+}
+```
+```{r echo=TRUE, results= 'asis'}
+ladg (e, f, a, b)
+```
+
+The LADG is used to calculate the change in equity, when the expected interest rate shock for assets and liabilities is the same (spread = 0). The formula from the aggregate change in equity simplifies, due to the interest rate shock being the same for both assets and liabilites. Instead of calculating the difference between change in assets and the change in liabilities, the individual changes are replaced wtih the negative LADG.
+
+![](/Users/Phoebe/Desktop/Programming II/Package Project/durationModel/vignettes/delta e.png)
+
+The "deltaE" function includes familiar computations before applying the formula depicted above. The lines, leading up to the formula depicted above in the last line, are the computations done for the duration of assets and liabilites. Once the durations are computed the function computes the market measure of risk "k" and the LADG. The penultimate and ultimate line of the function are new insertions. Penultimately, the function computes the total asset value of the financial intermediary and insterts it into the formula in the last line of code, returning the change in equity due to a predicted change in interest rate.
+
+For the example below we will assume that the interest rates have declined by 30bps for both assets and liabilities. Executing the function with our predetermined vectors of asset value (e), asset duration (f), liability value (a), liability duration (b), and r = -0.0030 the change in equity is EURm 13571.34.
+
+```{r echo=TRUE, results= 'asis'}
+deltaE <- function(x,y,z,w,r){
+  u <- length(x)
+  p <- x[1:u]/sum(x[1:u])
+  Da <- (sum(p[1:u]*y[1:u]))
+  n <- length(z)
+  o <- z[1:n]/sum(z[1:n])
+  Dl <- sum(o[1:n]*w[1:n])
+  k <- sum(z)/sum(x)
+  ladg <- Da - (Dl*k)
+  A <- sum(x)
+  return(-ladg * A * r)
+}
+```
+```{r echo=TRUE, results= 'asis'}
+deltaE (e, f, a, b, -0.0030)
+```
+
+## Conclusion
+
+Based on a predicted change in interest rate, the duration gap model can be used to predict the effect on the financial intermediary's net worth. If the effect is too large, corrections from the managers shall be considered. The duration gap can be used to restructure the balance sheet to limit losses or immunize completely against i.r. risk, meaning that the predicted change in Equity = 0. For example, if the Leverage adj. duration gap is positive (DA > DLk), then the manager will need to make decisions to either lower the duration of assets, increase the duration of liabilities, or increase measure of market leverage. 
+To maintain interest rate immunization, a portfolio needs to be constantly rebalanced. In practice, most institutions rebalance at discrete intervals: quarterly, semiannually. For the purpose of the periodical rebalancing act, this package can make quick and clean calculations, providing managers with the necessary results to make educated corrections to their portfolios.
+
+
+
+
