@@ -45,7 +45,7 @@ Tetteng Gaduel
 Phoebe Staenz
 }
 \note{no further notes}
-\seealso{n/a}
+\seealso{no further notes}
 \examples{
 e <- c(750, 500, 250) ## asset values
 f <- c(2.5, 0.5, 1) ## asset durations
